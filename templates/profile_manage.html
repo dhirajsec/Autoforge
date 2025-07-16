@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Manage Profiles - AutoForge</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 30px;
+      background-color: #f4f4f4;
+      color: #333;
+    }
+    h1 { margin-bottom: 20px; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 30px;
+      background-color: #fff;
+    }
+    th, td {
+      padding: 12px;
+      border-bottom: 1px solid #ccc;
+      text-align: left;
+    }
+    th {
+      background-color: #0078D4;
+      color: white;
+    }
+    a.button, button.btn {
+      padding: 6px 12px;
+      background-color: #0078D4;
+      color: white;
+      text-decoration: none;
+      border-radius: 4px;
+      font-size: 14px;
+      border: none;
+      cursor: pointer;
+    }
+    a.button:hover, button.btn:hover {
+      background-color: #005A9E;
+    }
+    .rule-block {
+      padding: 12px;
+      margin-bottom: 10px;
+      background-color: #fff;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+    }
+    label {
+      margin-right: 15px;
+      display: inline-block;
+    }
+    input[type="checkbox"] { margin-right: 6px; }
+    .highlight { background-color: #fff3cd; }
+    .nav-link {
+      display: inline-block;
+      margin-top: 30px;
+      color: #0078D4;
+      text-decoration: none;
+    }
+    .nav-link:hover { text-decoration: underline; }
+  </style>
+  <script>
+    function buildRulesJSON() {
+      const rules = {};
+      document.querySelectorAll(".rule-block").forEach((el) => {
+        const ruleName = el.getAttribute("data-rule");
+        const enabled = el.querySelector(".enabled").checked;
+        const optional = el.querySelector(".optional").checked;
+        rules[ruleName] = { enabled, optional };
+      });
+      document.getElementById("rules_json").value = JSON.stringify(rules);
+    }
+
+    function toggleDiffOnly() {
+      const showOnly = document.getElementById("show_diff_only").checked;
+      document.querySelectorAll("tr.diff-row").forEach(row => {
+        row.style.display = showOnly ? "" : "table-row";
+      });
+      document.querySelectorAll("tr.same-row").forEach(row => {
+        row.style.display = showOnly ? "none" : "table-row";
+      });
+    }
+  </script>
+</head>
+<body>
+
+  <h1>🛠 Manage Profiles</h1>
+
+{% if edit_profile %}
+  <h2>✏️ Editing: {{ edit_profile }}</h2>
+  <form method="POST" action="/save-profile" onsubmit="buildRulesJSON()">
+    <input type="hidden" name="profile_name" value="{{ edit_profile }}">
+    <input type="hidden" name="rules_json" id="rules_json">
+    <input type="text" name="profile_comment" placeholder="Describe this profile’s purpose or scope" style="margin-top: 12px; width: 100%;">
+    <label>
+      <input type="checkbox" name="strict_mode_value" value="true" {% if strict_mode %}checked{% endif %}>
+      Enable Strict Mode
+    </label>
+
+    <div style="margin-top: 20px;">
+      {% for rule, settings in edit_rules.items() %}
+      <div class="rule-block" data-rule="{{ rule }}">
+        <strong>{{ rule }}</strong><br>
+        <label>
+          <input type="checkbox" class="enabled" {% if settings.enabled %}checked{% endif %}>
+          Enabled
+        </label>
+        <label>
+          <input type="checkbox" class="optional" {% if settings.optional %}checked{% endif %}>
+          Optional
+        </label>
+      </div>
+      {% endfor %}
+    </div>
+
+    <button type="submit" class="btn">💾 Save Changes</button>
+  </form>
+
+  <a href="/manage-profiles" class="nav-link">🔙 Back to Profile List</a>
+
+{% else %}
+  <table>
+    <tr>
+      <th>Profile</th>
+      <th>Actions</th>
+    </tr>
+    {% for file in profiles %}
+    <tr>
+      <td>{{ file }}</td>
+      <td>
+        <a href="/download-profile?filename={{ file }}" class="button">📥 Download</a>
+        <a href="/manage-profiles?edit={{ file }}" class="button">✏️ Edit</a>
+        <a href="/delete-profile?filename={{ file }}" class="button" onclick="return confirm('Delete {{ file }}?')">🗑 Delete</a>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  <hr style="margin-top:30px; margin-bottom:20px;">
+
+<h2>🕒 Recent Profile Activity</h2>
+<ul style="list-style: none; padding-left: 0;">
+  {% for item in recent_activity %}
+    <li style="margin-bottom: 12px; border-left: 3px solid #ccc; padding-left: 10px;">
+      <strong>{{ item.name }}</strong>
+      <span style="color: gray;"> — {{ item.timestamp }}</span><br>
+      <em>{{ item.comment or "No comment provided" }}</em><br>
+      <small>Tags: {{ item.tags | join(", ") }}</small>
+    </li>
+  {% endfor %}
+</ul>
+<hr style="margin-top:30px; margin-bottom:20px;">
+
+<h2>📊 Metadata Coverage Report</h2>
+<ul>
+  <li>Total Profiles: {{ meta_report.total }}</li>
+  <li>Profiles with Metadata: {{ meta_report.with_meta }}</li>
+  <li>Missing Comments: {{ meta_report.missing_comment | length }}</li>
+  <li>Missing Tags: {{ meta_report.missing_tags | length }}</li>
+  <li>Missing Timestamps: {{ meta_report.missing_timestamp | length }}</li>
+  <li>No Meta Block: {{ meta_report.no_meta | length }}</li>
+</ul>
+
+{% if meta_report.missing_comment %}
+  <p><strong>📝 Profiles Missing Comments:</strong></p>
+  <ul>
+    {% for fname in meta_report.missing_comment %}
+      <li><a href="/manage-profiles?edit={{ fname }}">{{ fname }}</a></li>
+    {% endfor %}
+  </ul>
+{% endif %}
+
+{% if meta_report.no_meta %}
+  <p><strong>🚫 Profiles Without Metadata:</strong></p>
+  <ul>
+    {% for fname in meta_report.no_meta %}
+      <li><a href="/manage-profiles?edit={{ fname }}">{{ fname }}</a></li>
+    {% endfor %}
+  </ul>
+{% endif %}
+  <a href="/pre-scan-setup" class="nav-link">➕ Create New Profile</a>
+
+  <hr style="margin-top:40px; margin-bottom:30px;">
+
+  <!-- 🔍 Compare Profiles -->
+  <h2>🔍 Compare Profiles</h2>
+  {% if profiles|length >= 2 %}
+  <form method="GET" action="/compare-profiles">
+    <label>Profile 1:</label>
+    <select name="p1" required>
+      {% for file in profiles %}
+        <option value="{{ file }}" {% if file == selected_p1 %}selected{% endif %}>{{ file }}</option>
+      {% endfor %}
+    </select>
+
+    <label>Profile 2:</label>
+    <select name="p2" required>
+      {% for file in profiles %}
+        <option value="{{ file }}" {% if file == selected_p2 %}selected{% endif %}>{{ file }}</option>
+      {% endfor %}
+    </select>
+
+    <button type="submit" class="btn">Compare</button>
+  </form>
+
+  {% if diff_result %}
+    <label style="margin-top: 20px; display:block;">
+      <input type="checkbox" id="show_diff_only" onchange="toggleDiffOnly()">
+      Show Only Differences
+    </label>
+
+    <p><strong>{{ diff_result | length }}</strong> rules compared.</p>
+
+    <table>
+      <tr>
+        <th>Rule</th>
+        <th>{{ selected_p1 }}</th>
+        <th>{{ selected_p2 }}</th>
+      </tr>
+      {% set diff_count = 0 %}
+      {% for row in diff_result %}
+        {% set changed = row.p1_enabled != row.p2_enabled or row.p1_optional != row.p2_optional %}
+        {% if changed %}{% set diff_count = diff_count + 1 %}{% endif %}
+        <tr class="{{ 'diff-row' if changed else 'same-row' }} {% if changed %}highlight{% endif %}">
+          <td>{{ row.rule }}</td>
+          <td>
+            Enabled: {{ "Yes" if row.p1_enabled else "No" }}<br>
+            Optional: {{ "Yes" if row.p1_optional else "No" }}
+          </td>
+          <td>
+            Enabled: {{ "Yes" if row.p2_enabled else "No" }}<br>
+            Optional: {{ "Yes" if row.p2_optional else "No" }}
+          </td>
+        </tr>
+      {% endfor %}
+    </table>
+
+    <p><strong>{{ diff_count }}</strong> rule difference{{ 's' if diff_count != 1 else '' }} found.</p>
+  {% endif %}
+  {% else %}
+    <p style="color: red; font-weight: bold;">⚠️ You need at least two profiles to run a comparison.</p>
+  {% endif %}
+
+  <hr style="margin-top:40px; margin-bottom:30px;">
+
+  <!-- 🧬 Merge Profiles -->
+  <h2>🧬 Merge Profiles</h2>
+  <form method="GET" action="/merge-profiles">
+    <label>Profile A:</label>
+    <select name="p1" required>
+      {% for file in profiles %}
+        <option value="{{ file }}">{{ file }}</option>
+      {% endfor %}
+    </select>
+
+    <label>Profile B:</label>
+    <select name="p2" required>
+      {% for file in profiles %}
+        <option value="{{ file }}">{{ file }}</option>
+      {% endfor %}
+    </select>
+
+    <button type="submit" class="btn">Launch Merge Builder</button>
+  </form>
+
+  {% if merge_profiles %}
+    <hr style="margin-top:30px;">
+    <h3>🧬 Merging: {{ merge_profiles.p1 }} + {{ merge_profiles.p2 }}</h3>
+
+    <form method="POST" action="/save-merged-profile">
+      <input type="hidden" name="p1" value="{{ merge_profiles.p1 }}">
+      <input type="hidden" name="p2" value="{{ merge_profiles.p2 }}">
+
+      {% if merge_profiles.conflicts %}
+        <div style="border: 1px solid red; background-color: #fff0f0; padding: 10px; margin-top: 20px;">
+          <h3>⚠️ Merge Conflict Summary</h3>
+          <ul>
+            {% for item in merge_profiles.conflicts %}
+              <li>
+                <strong>{{ item.rule }}</strong>: 
+                Enabled → {{ item.p1.get("enabled", "—") }} vs {{ item.p2.get("enabled", "—") }},
+                Optional → {{ item.p1.get("optional", "—") }} vs {{ item.p2.get("optional", "—") }}
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+
+      <label><strong>Strict Mode:</strong></label>
+      <label><input type="radio" name="strict_mode" value="p1" checked> From {{ merge_profiles.p1 }}</label>
+      <label><input type="radio" name="strict_mode" value="p2"> From {{ merge_profiles.p2 }}</label>
+
+      <div style="margin-top: 20px;">
+        {% for rule in merge_profiles.all_rules %}
+          <div class="rule-block" data-rule="{{ rule }}" style="margin-bottom: 12px;">
+            <strong>{{ rule }}</strong><br>
+            <label><input type="radio" name="{{ rule }}" value="p1" checked> Use from {{ merge_profiles.p1 }}</label>
+            <label><input type="radio" name="{{ rule }}" value="p2"> Use from {{ merge_profiles.p2 }}</label>
+          </div>
+        {% endfor %}
+      </div>
+
+      <input type="text" name="new_profile_name" placeholder="New profile name" required style="margin-top: 20px;">
+      <input type="text" name="merge_comment" placeholder="Add merge purpose or comment" style="margin-top: 10px; width: 100%;">
+      <button type="submit" class="btn">💾 Save Merged Profile</button>
+    </form>
+
+    <a href="/manage-profiles" class="nav-link">🔙 Cancel Merge</a>
+  {% endif %}
+{% endif %}

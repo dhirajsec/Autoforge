@@ -1,0 +1,22 @@
+rules:
+  - deny:
+      from: any
+      to: admin-role
+      reason: "No principal should assume admin-role unless tagged prod."
+      condition:
+        tag: env != prod
+      reason: "Admin access must be restricted to prod Lambdas."
+
+  - flag:
+      from: IAM_Role
+      to: S3_Bucket
+      condition:
+        action: s3:GetObject
+      reason: "Reading from S3 should be audited if done via IAM Role."
+
+  - audit:
+    from: EC2_Instance
+    to: KMS_Key
+    condition:
+      tag: encrypted != true
+    reason: "Log KMS access for non-encrypted paths."

@@ -1,0 +1,19 @@
+{
+  "deny_paths": [
+    {
+      "target": "admin-role",
+      "unless_tag": "env:prod",
+      "message": "Admin access blocked outside production."
+    }
+  ],
+  "exclude_roles": ["UnapprovedThirdParty"],
+  "severity_overrides": {
+    "s3:GetObject": "high",
+    "sts:AssumeRole": "medium"
+  },
+  "scope": {
+    "tag": "team:security",
+    "folder": "sample_tf"
+  },
+  "enabled_modules": ["iam", "s3", "kms"]
+}

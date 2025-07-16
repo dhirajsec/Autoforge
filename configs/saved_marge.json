@@ -1,0 +1,37 @@
+{
+  "strict_mode": true,
+  "rules": {
+    "sensitive_output_leak": {
+      "enabled": true,
+      "optional": true
+    },
+    "enforce_encryption": {
+      "enabled": true,
+      "optional": false
+    },
+    "enable_public_access_check": {
+      "enabled": true,
+      "optional": true
+    },
+    "enable_https_check": {
+      "enabled": true,
+      "optional": false
+    },
+    "require_tags": {
+      "enabled": true,
+      "optional": false
+    },
+    "check_open_ssh_ingress": {
+      "enabled": true,
+      "optional": true
+    },
+    "remote_module_source": {
+      "enabled": false,
+      "optional": true
+    },
+    "enable_replication_check": {
+      "enabled": true,
+      "optional": true
+    }
+  }
+}

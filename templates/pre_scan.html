@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>AutoForge Pre-Scan Setup</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background-color: #f5f5f5;
+      color: #333;
+    }
+    h1 { color: #444; }
+    .form-section, .save-section {
+      background-color: #fff;
+      border: 1px solid #ddd;
+      padding: 20px;
+      margin-top: 30px;
+      border-radius: 5px;
+      box-shadow: 1px 1px 4px rgba(0,0,0,0.05);
+    }
+    label { display: block; margin: 10px 0; }
+    input[type="text"], select {
+      width: 300px;
+      padding: 8px;
+      margin-bottom: 20px;
+    }
+    button {
+      padding: 10px 20px;
+      background-color: #0078D4;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover { background-color: #005A9E; }
+    .nav-link {
+      margin-top: 20px;
+      display: inline-block;
+    }
+    .optional { color: gray; font-style: italic; margin-left: 10px; }
+  </style>
+</head>
+<body>
+
+  <h1>🛠️ AutoForge Pre-Scan Setup</h1>
+
+  <!-- 🚀 Scan Form -->
+  <div class="form-section">
+    <form action="/run-scan" method="post">
+      <label><b>📁 Scan Folder Path:</b></label>
+      <input type="text" name="scan_folder" placeholder="e.g. terraform/modules" required>
+
+      <label><b>📂 Select Scan Profile:</b></label>
+      <select name="profile" required>
+        {% for file in profiles %}
+          <option value="{{ file }}" {% if file == active %}selected{% endif %}>{{ file }}</option>
+        {% endfor %}
+      </select>
+
+      <label><b>🔧 Enabled Rules:</b></label>
+      {% for rule, config in profile.rules.items() %}
+        <label>
+          <input type="checkbox" name="{{ rule }}" value="true" {% if config.enabled %}checked{% endif %}>
+          {{ rule }}
+          {% if config.optional %}
+            <span class="optional">(Optional)</span>
+          {% endif %}
+        </label>
+      {% endfor %}
+
+      <label style="margin-top: 20px;">
+        <input type="checkbox" name="strict_mode" value="true" {% if profile.strict_mode %}checked{% endif %}>
+        🔐 Enable Strict Mode
+      </label>
+
+      <br><br>
+      <button type="submit">🚀 Run Scan</button>
+    </form>
+  </div>
+
+  <!-- 💾 Save Profile Form -->
+  <div class="save-section">
+    <h2>💾 Save Custom Profile</h2>
+    <form method="POST" action="/save-profile" onsubmit="gatherProfileConfig()">
+      <label>📝 Profile Name:</label>
+      <input type="text" name="profile_name" placeholder="e.g. dev_relaxed.json" required>
+
+      <!-- Hidden fields that get populated via JS -->
+      <input type="hidden" id="ruleData" name="rules_json">
+      <input type="hidden" id="modeData" name="strict_mode_value">
+
+      <button type="submit">Save Profile</button>
+    </form>
+  </div>
+
+  <a href="/dashboard-html" class="nav-link">📊 View Dashboard</a>
+
+  <!-- 🔧 JS to Capture Current Settings -->
+  <script>
+    function gatherProfileConfig() {
+      const rules = {};
+      document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        const ruleName = cb.name;
+        if (!ruleName || ruleName === 'strict_mode') return;
+
+        const isEnabled = cb.checked;
+        const labelText = cb.closest('label').innerText;
+        const isOptional = labelText.includes('(Optional)');
+        rules[ruleName] = { enabled: isEnabled, optional: isOptional };
+      });
+
+      const strictMode = document.querySelector('input[name="strict_mode"]').checked;
+
+      // Inject config into hidden inputs
+      document.getElementById("ruleData").value = JSON.stringify(rules);
+      document.getElementById("modeData").value = strictMode;
+    }
+  </script>
+
+</body>
+</html>

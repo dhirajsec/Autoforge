@@ -1,0 +1,26 @@
+{
+    "timestamp": "2025-07-08_22-47-24",
+    "profile": "config.json",
+    "folder": "sample_tf",
+    "score": 100,
+    "summary": {
+        "files": 1,
+        "passed": 1,
+        "warnings": 0,
+        "failed": 1,
+        "score": 100
+    },
+    "results": {
+        "sample.tf": [
+            "\ud83d\udeab HTTPS traffic not enforced at line 3",
+            {
+                "message": "\ud83d\udeab Public access enabled at line 2",
+                "rule": "Public Access Check",
+                "plugin": "public_access",
+                "severity": "high",
+                "category": "network",
+                "suggestion": "Set `public_access = false` to avoid exposure to the internet."
+            }
+        ]
+    }
+}

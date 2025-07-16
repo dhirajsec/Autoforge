@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>IAM Access Graph</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 24px;
+            background-color: #f9f9f9;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .timestamp {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+        img {
+            max-width: 100%;
+            border: 1px solid #ccc;
+            margin-bottom: 20px;
+        }
+        .legend, .summary, .violations {
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+        .legend span {
+            padding: 6px 12px;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+        .red { background-color: red; color: white; }
+        .orange { background-color: orange; }
+        .green { background-color: green; color: white; }
+        .gray { background-color: gray; color: white; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+        th {
+            background-color: #f0f0f0;
+        }
+        .download-link {
+            font-size: 14px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔐 IAM Access Graph</h1>
+    <p class="timestamp">Generated on {{ timestamp }}</p>
+
+    <img src="{{ image_path }}" alt="IAM Access Graph">
+
+    <div class="legend">
+        <p><strong>Risk Levels:</strong></p>
+        <span class="red">High</span>
+        <span class="orange">Medium</span>
+        <span class="green">Low</span>
+        <span class="gray">Info</span>
+    </div>
+
+    <div class="summary">
+        <h3>Scan Summary</h3>
+        <ul>
+            <li><strong>Total Principals:</strong> {{ summary.nodes }}</li>
+            <li><strong>Trust Relationships:</strong> {{ summary.edges }}</li>
+            <li><strong>High-Risk Connections:</strong> {{ summary.high_risk_count }}</li>
+        </ul>
+    </div>
+
+    <div class="violations">
+        <h3>🔎 Violations Summary</h3>
+        {% if summary.violations %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Source</th>
+                    <th>Target</th>
+                    <th>Action</th>
+                    <th>Severity</th>
+                    <th>Reason</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for v in summary.violations %}
+                <tr>
+                    <td>{{ v.source }}</td>
+                    <td>{{ v.target }}</td>
+                    <td>{{ v.action or "–" }}</td>
+                    <td style="color: {% if v.severity == 'high' %}red{% elif v.severity == 'medium' %}orange{% else %}gray{% endif %}; font-weight: bold;">
+                        {{ v.severity }}
+                    </td>
+                    <td>{{ v.message }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>No violations detected 🎉</p>
+        {% endif %}
+    </div>
+
+    <p class="download-link">
+        <a href="/static/reports/{{ filename.replace('.png', '.json') }}" download>
+            📦 Download Full Scan Summary (JSON)
+        </a>
+    </p>
+</body>
+</html>

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>AutoForge Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background-color: #f9f9f9;
+      color: #333;
+    }
+    h1, h2 {
+      border-bottom: 2px solid #ccc;
+      padding-bottom: 5px;
+      margin-top: 40px;
+    }
+    h3 { margin-top: 25px; color: #444; }
+    ul { list-style-type: none; padding-left: 0; }
+    li { margin-bottom: 8px; }
+    .section {
+      background: #fff;
+      border: 1px solid #ddd;
+      padding: 20px;
+      margin-top: 30px;
+      border-radius: 6px;
+      box-shadow: 1px 1px 4px rgba(0,0,0,0.05);
+    }
+    .enabled { color: green; }
+    .disabled { color: red; }
+    .optional { color: gray; font-style: italic; }
+    .rule-form label { display: block; margin-bottom: 8px; }
+    .rule-form button { margin-top: 12px; }
+    .history-form { margin-top: 10px; margin-bottom: 20px; }
+    .message {
+      color: green;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🚦 AutoForge Dashboard</h1>
+
+  {% if config_saved %}
+    <div class="message">✅ Scan configuration saved successfully!</div>
+  {% endif %}
+
+  <!-- 📜 Scan History Selector -->
+  <form method="GET" action="/dashboard-html" class="history-form">
+    <label for="name"><b>📜 View Previous Scan:</b></label>
+    <select name="name">
+      {% for scan_file in scan_files %}
+        <option value="{{ scan_file }}"
+          {% if scan_file == timestamp ~ "_scan.json" %}selected{% endif %}>
+          {{ scan_file }}
+        </option>
+      {% endfor %}
+    </select>
+    <button type="submit">Load</button>
+  </form>
+
+  <!-- 🔒 Compliance Mode -->
+  <div class="section">
+    <h2>🔒 Compliance Mode</h2>
+    <p>
+      {% if strict_mode %}
+        <span style="color: crimson;"><b>STRICT</b></span> — all rules enforced
+      {% else %}
+        <span style="color: gray;"><b>RELAXED</b></span> — only required rules applied
+      {% endif %}
+    </p>
+    <form method="POST" action="/toggle-strict">
+      <button type="submit" style="margin-top: 10px;">
+        {% if strict_mode %}
+          Switch to Relaxed Mode 🌙
+        {% else %}
+          Switch to Strict Mode 🔐
+        {% endif %}
+      </button>
+    </form>
+  </div>
+
+  <!-- 📝 Latest Scan Summary -->
+  <div class="section">
+    <h2>📝 Latest Scan Summary</h2>
+    <p>
+      <b>Timestamp:</b> {{ timestamp }}<br>
+      <b>Profile:</b> {{ profile_name }}<br>
+      <b>Folder:</b> {{ folder }}<br>
+      <b>Compliance Score:</b> <span style="color: green;">{{ score }}&#37;</span>
+    </p>
+    <p>
+      <a href="/export" download>
+        <button>📤 Export Latest Scan</button>
+      </a>
+    </p>
+  </div>
+
+  <!-- 🔧 Scan Profile -->
+  <div class="section">
+    <h2>🔧 Scan Profile</h2>
+    <form method="POST" action="/update-profile" class="rule-form">
+      {% for rule, config in profile_rules.items() %}
+        <label>
+          <input type="checkbox" name="{{ rule }}" value="true"
+                 {% if config.enabled %}checked{% endif %}>
+          {{ rule }}
+          {% if config.optional %}
+            <span class="optional">(Optional)</span>
+          {% endif %}
+          :
+          <b class="{{ 'enabled' if config.enabled else 'disabled' }}">
+            {{ '✅ Enabled' if config.enabled else '❌ Disabled' }}
+          </b>
+        </label>
+      {% endfor %}
+      <button type="submit">Update Rules</button>
+    </form>
+  </div>
+
+  <!-- 📊 Rule Coverage -->
+  <div class="section">
+    <h2>📊 Rule Coverage</h2>
+    <ul>
+      {% for rule, count in rule_stats.items() %}
+        <li>
+          {{ rule }} →
+          {% if count > 0 %}
+            🟢 {{ count }} hit{{ 's' if count > 1 else '' }}
+          {% else %}
+            ⚪ No hits
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <!-- 📈 Scan Trends -->
+  <div class="section">
+    <h2>📈 Scan Trends</h2>
+    <ul>
+      {% for t in trends %}
+        <li>{{ t.timestamp }} → 🧠 Score = <b>{{ t.score }}&#37;</b></li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <!-- 🔍 Violations by File -->
+  <div class="section">
+    <h2>🔍 Violations by File</h2>
+    {% for file, issues in results.items() %}
+      <h3>📄 {{ file }}</h3>
+      <ul>
+        {% for issue in issues %}
+          <li>🔸 {{ issue.message if issue.message is defined else issue }}</li>
+        {% endfor %}
+      </ul>
+    {% endfor %}
+  </div>
+
+  <!-- 🧠 Violations by Severity -->
+<div class="section">
+  <h2>🧠 Violations by Severity</h2>
+  {% for level in ['Critical', 'High', 'Medium', 'Info'] %}
+    {% if grouped[level] %}
+      <h3 style="color:
+        {% if level == 'Critical' %}red
+        {% elif level == 'High' %}orange
+        {% elif level == 'Medium' %}goldenrod
+        {% else %}gray{% endif %};">
+        {{ level }} Issues
+      </h3>
+      <ul>
+        {% for i in grouped[level] %}
+          <li>📄 <b>{{ i.file }}</b> @ line {{ i.line }} → {{ i.message }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  {% endfor %}
+</div>
+
+<!-- 🔥 Scan Risk Highlights -->
+<div class="section">
+  <h2>🔥 Scan Risk Highlights</h2>
+  {% if high_risk_hits %}
+    <ul>
+      {% for rule, count in high_risk_hits.items() %}
+        <li>
+          <strong>{{ rule }}</strong> →
+          <span style="color:red;">🔴 {{ count }} high-risk hit{{ 's' if count > 1 else '' }}</span>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p><em>No high-risk rules triggered in this scan. 🟢</em></p>
+  {% endif %}
+</div>
+
+<!-- 🛡️ Security Tag Overview -->
+<div class="section">
+  <h2>🛡️ Security Tag Overview</h2>
+  <ul>
+    {% for item in security_overview %}
+      <li>
+        <strong>{{ item.name }}</strong><br>
+        {% if item.security_tags %}
+          {% for tag in item.security_tags %}
+            <span style="display:inline-block; background:#e0f7fa; padding:4px 10px; margin:3px; border-radius:10px;">
+              {{ tag }}
+            </span>
+          {% endfor %}
+        {% else %}
+          <em style="color:gray;">No security tags detected</em>
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+</div>
+
+</body>
+</html>

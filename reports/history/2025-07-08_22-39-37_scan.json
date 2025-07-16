@@ -1,0 +1,24 @@
+{
+    "timestamp": "2025-07-08_22-39-37",
+    "profile": "config.json",
+    "folder": "sample_tf",
+    "score": 100,
+    "summary": {
+        "files": 1,
+        "passed": 1,
+        "warnings": 0,
+        "failed": 0,
+        "score": 100
+    },
+    "results": {
+        "sample.tf": [
+            {
+                "message": "\u2705 No compliance issues detected",
+                "rule": "All Clear",
+                "plugin": "base",
+                "severity": "none",
+                "category": "compliance"
+            }
+        ]
+    }
+}
