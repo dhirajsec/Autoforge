@@ -1,4 +1,4 @@
-# 🔐 AutoForge Security Orchestration
+# 🔐 AutoForge Infrastructre scanning tool
 
 AutoForge is a modular security orchestration engine inspired by tools like **Checkov**, built to scan and enforce compliance across infrastructure-as-code environments. While its current implementation targets **Terraform**, AutoForge is evolving into a broader platform capable of supporting multi-cloud IAC formats with dynamic orchestration.
 
