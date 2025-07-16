@@ -358,6 +358,13 @@ def compare_profiles(request: Request):
                 "message": f"❌ Error loading comparison: {e}"
             })
 
+    # ✅ Add meta_report context to avoid template crash
+    meta_report = {
+        "total": len(profiles),
+        "comparison_keys": len(diff_result),
+        "loaded": bool(p1 and p2)
+    }
+
     return templates.TemplateResponse("profile_manage.html", {
         "request": request,
         "profiles": profiles,
@@ -365,7 +372,8 @@ def compare_profiles(request: Request):
         "selected_p2": p2,
         "strict_p1": data1.get("strict_mode"),
         "strict_p2": data2.get("strict_mode"),
-        "diff_result": diff_result
+        "diff_result": diff_result,
+        "meta_report": meta_report
     })
 @app.get("/merge-profiles")
 def merge_profiles(request: Request):
