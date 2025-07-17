@@ -2,7 +2,6 @@ import json
 import os
 from typing import Dict, List
 
-# ✅ Define supported compliance frameworks
 FRAMEWORKS = {
     "cis": {
         "label": "CIS Benchmark",
